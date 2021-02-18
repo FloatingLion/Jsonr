@@ -1,0 +1,5 @@
+resolver:
+  ghc-8.10.3
+
+packages:
+- .
