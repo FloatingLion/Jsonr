@@ -1,0 +1,14 @@
+module JR () where
+
+
+
+import           JSONReader
+
+
+
+_p :: String -> IO ()
+_p s = putStrLn $ case jread s of
+  Left msg -> "错误：" ++ msg
+  Right v  -> show v
+
+s₁ = ""
