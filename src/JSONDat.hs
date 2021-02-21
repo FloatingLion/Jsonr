@@ -9,3 +9,4 @@ data JDat = JNothing                   -- ^ 空值
           | JArray [JDat]              -- ^ 数组，即 [JDat, JDat, ..]
           | JObject [(String, JDat)]   -- ^ 对象，即 {JString:JDat, JString:JDat, ..}
           deriving (Eq, Ord, Show)
+

@@ -1,6 +1,6 @@
 module JSONReader (jread) where
 
-import           Control.Arrow       (first)
+import           Control.Arrow       (first, second)
 import           Control.Monad.State
 import           Data.Char           (isAlpha, isAlphaNum, isSpace)
 import           Data.List           (find, isPrefixOf)
@@ -9,7 +9,7 @@ import           Text.Read           (readsPrec)
 
 
 jread :: String -> Either String JDat
-jread s = let (result, flag) = runState jDatParser (Ok s)
+jread s = let (result, flag) = runState jValueParser (Ok s)
           in case flag of Unknown   -> Left "传入的数据无法解析"
                           Fatal msg -> Left msg
                           Ok []     -> Right result
@@ -33,10 +33,26 @@ p₁ <|> p₂ = whenOk $ \state₀@(Ok _) ->
        _       -> put state₁ >> return result
 
 constantParser, numberParser, stringParser :: JState
+commentParser                              :: JState
 arrayParser, objectParser                  :: JState
-jDatParser                                 :: JState
+jValueParser                               :: JState
 
-jDatParser = objectParser <|> arrayParser <|>
+commentParser = whenOk $ \ (Ok dat) ->
+  case dat of
+    '/':'/':r -> commit $ inlineParser r
+    '/':'*':r -> commit $ multilineParser r
+    _         -> unknown
+  where inlineParser []          = (Ok [], [])
+        inlineParser ('\n':rest) = (Ok rest, [])
+        inlineParser (c:rest)    = (c:) `second` inlineParser rest
+        multilineParser []             = (Fatal "存在未闭合的多行注释", [])
+        multilineParser ('*':'/':rest) = (Ok rest, [])
+        multilineParser (c:rest)       = (c:) `second` multilineParser rest
+        commit :: (ParsingFlag, String) -> JState
+        commit (s@(Ok _), r) = put s >> return (JComment r)
+        commit (s, r)        = put s >> return JNothing
+
+jValueParser = objectParser <|> arrayParser <|>
              stringParser <|> numberParser <|> constantParser
 
 arrayParser = whenOk $ \ (Ok dat) ->
@@ -45,7 +61,7 @@ arrayParser = whenOk $ \ (Ok dat) ->
   where apaux :: String -> JState
         apaux [] = die "存在未闭合的数组"
         apaux (']':r) = put (Ok r) >> return (JArray [])
-        apaux s₀      = put (Ok s₀) >> jDatParser >>= \ result ->
+        apaux s₀      = put (Ok s₀) >> jValueParser >>= \ result ->
           whenOk $ \ (Ok dat) ->
                      case skipSpace dat of
                        s₁@(c:cs) -> let rest = if c == ',' then cs else s₁
@@ -60,7 +76,7 @@ objectParser = whenOk $ \ (Ok dat) ->
   where opaux [] = die "存在未闭合的对象"
         opaux ('}':r) = put (Ok r) >> return (JObject [])
         opaux s₀      = put (Ok s₀) >> stringParser >>= \ keyr ->
-          nextCharShould (==':')    >> jDatParser   >>= \ valr ->
+          nextCharShould (==':')    >> jValueParser   >>= \ valr ->
           whenOk $ \ (Ok dat) ->
                      case skipSpace dat of
                        s₁@(c:cs) | c == ',' ->
