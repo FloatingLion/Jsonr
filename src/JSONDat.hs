@@ -1,7 +1,10 @@
 module JSONDat where
 
 -- | 代表JSON里的注释，其定义主要是为了区分不同的注释风格。其值分为行
--- 内注释，多行注释。
+-- 内注释和多行注释。行内注释以“\/\/”开始，换行符“\\n”结束，之间的所有
+-- 内容都会被解释为注释；多行注释以字符序列“\/*”开始，以字符序列“*/”结
+-- 束。多行注释不嵌套，之中的所有字符都被解释为注释。字符串中的字符序
+-- 列不会被作为注释解析。
 data JComment = JInlineComment String
               | JMultilineComment String
               | JNoComment
@@ -59,6 +62,7 @@ annotate (JArray  (JAtom _ x _)) c₁ c₂ = JArray  (JAtom c₁ x c₂)
 annotate (JObject (JAtom _ x _)) c₁ c₂ = JObject (JAtom c₁ x c₂)
 annotate x                       _  _  = x
 
+-- | 返回一个不带注释的JSON值
 plainAtom n = JAtom { jprec  = []
                     , jval   = n
                     , jpostc = [] }
