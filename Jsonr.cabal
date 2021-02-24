@@ -4,17 +4,17 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 384751389954cd96ea311a6680c265f3066e5bcb28df580fa94552874df5cb32
+-- hash: c9ee9085ec2377579438d0ce052296739ad134895d44655de8772963fe809b14
 
 name:           Jsonr
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/Jsonr#readme>
-homepage:       https://github.com/githubuser/Jsonr#readme
-bug-reports:    https://github.com/githubuser/Jsonr/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2021 Author name here
-license:        BSD3
+description:    一个对JSON的解析、处理系统
+homepage:       https://github.com/FloatingLion/Jsonr#readme
+bug-reports:    https://github.com/FloatingLion/Jsonr/issues
+author:         Lifoz
+maintainer:     floatinglion@outlook.com
+copyright:      2021 Lifoz
+license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
@@ -23,11 +23,12 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/Jsonr
+  location: https://github.com/FloatingLion/Jsonr
 
 library
   exposed-modules:
       JSONDat
+      JSONPrinter.Compress
       JSONReader
   other-modules:
       Paths_Jsonr
@@ -35,6 +36,9 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , directory >=1
+    , filepath
+    , hspec >=2.7
     , mtl >=2
   default-language: Haskell2010
 
@@ -48,6 +52,9 @@ executable Jsonr-exe
   build-depends:
       Jsonr
     , base >=4.7 && <5
+    , directory >=1
+    , filepath
+    , hspec >=2.7
     , mtl >=2
   default-language: Haskell2010
 
@@ -55,7 +62,7 @@ test-suite Jsonr-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      JR
+      CompressSpec
       Paths_Jsonr
   hs-source-dirs:
       test
@@ -63,5 +70,8 @@ test-suite Jsonr-test
   build-depends:
       Jsonr
     , base >=4.7 && <5
+    , directory >=1
+    , filepath
+    , hspec >=2.7
     , mtl >=2
   default-language: Haskell2010

@@ -1,5 +1,6 @@
 {-|
 Module    : JSONReader
+Description: 基于 _Standard ECMA-404_ 的JSON解析器
 Maintainer: lifoz@outlook.com
 
 = 更改记录
@@ -12,6 +13,13 @@ Maintainer: lifoz@outlook.com
 * 替换 'numberParser' 中使用的数字解析函数，添加额外的数字格式
 * 尝试重构 'arrayParser' 和 'objectParser'，减少模式匹配
 
+另外，因为注释会被视为JSON值的一部分（见 'JAtom'），所以匹配时会导致注
+释的重复解析。具体地讲，前缀注释解析之后才会解析实际的JSON值，如果相应
+的解析器返回 'Unknown'，整个 'withCheckComment' 块会返回 'Unknown'，而
+下一个被包裹在 'withCheckComment' 中的解析器会再次解析前缀注释。这个问
+题的一个解决方案是将大部分 'jread' 的逻辑移动到 'withCheckComment' 中，
+但在此先保留这个优化。
+
 -}
 module JSONReader (jread) where
 
@@ -21,7 +29,6 @@ import           Data.Char           (isAlpha, isAlphaNum, isSpace)
 import           Data.List           (find, isPrefixOf)
 import           JSONDat
 import           Text.Read           (readsPrec)
-
 
 {-|
 

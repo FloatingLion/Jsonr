@@ -1,5 +1,8 @@
 resolver:
-  ghc-8.10.3
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/2.yaml
 
 packages:
 - .
+
+extra-deps:
+- hspec-2.7.8

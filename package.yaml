@@ -1,10 +1,10 @@
 name:                Jsonr
 version:             0.1.0.0
-github:              "githubuser/Jsonr"
-license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2021 Author name here"
+github:              "FloatingLion/Jsonr"
+license:             MIT
+author:              "Lifoz"
+maintainer:          "floatinglion@outlook.com"
+copyright:           "2021 Lifoz"
 
 extra-source-files:
 - README.md
@@ -17,11 +17,14 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/Jsonr#readme>
+description: 一个对JSON的解析、处理系统
 
 dependencies:
 - base >= 4.7 && < 5
 - mtl >= 2
+- directory >= 1
+- filepath
+- hspec >= 2.7
 
 library:
   source-dirs: src
