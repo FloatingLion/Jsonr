@@ -5,11 +5,11 @@
 #+STARTUP: logdone
 
 * 简介
-
-这是一个用 [[https://www.haskell.org][Haskell]] 编写的JSON解析系统，包括JSON源文件的解析，格式化和外部语言转化。解析器依照规范 [[https://www.json.org/][ECMA-404]] 编写，部分功能正在完善。这个系统的目标是实现一个可扩展的，包括解析、格式化和外部语言接口的JSON分析库。
+  
+  这是一个用 [[https://www.haskell.org][Haskell]] 编写的JSON解析系统，包括JSON源文件的解析，格式化和外部语言转化。解析器依照规范 [[https://www.json.org/][ECMA-404]] 编写，部分功能正在完善。这个系统的目标是实现一个可扩展的，包括解析、格式化和外部语言接口的JSON分析库。
 
 * 工作进度
-
+  
 ** TODO 语法解析 [2/5]
    - [X] 基本语法解析
    - [X] 添加多种格式的注释支持
