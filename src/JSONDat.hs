@@ -27,7 +27,7 @@ data JAtom a = JAtom
 -- | 代表实际的JSON数据。除了特殊值空值以外，所有值都是对'JAtom'值的包
 -- 装。这里定义的JSON值分为：
 --
---  [@JNumber@] 数字，内部使用一个浮点数表示，还不能分辨不同的数字类型
+--  [@JNumber@] 数字，内部使用字符串记录，解析规则见 "JSONReader.Number"
 --  [@JString@] 字符串，现在仅接受由双引号包裹的字符串
 --  [@JBool@]   布尔值，包含 /true/ 和 /false/ 两个字面量
 --  [@JNull@]   NULL值，即字面量 /null/
@@ -38,7 +38,7 @@ data JAtom a = JAtom
 -- 其中数组和对象为复合数据，数据结构中的项都由逗号分隔。约定逗号不出
 -- 现在最后一项之后。
 data JDat = JNothing                               -- ^ 空值
-          | JNumber (JAtom Float)                  -- ^ 数字
+          | JNumber (JAtom String)                 -- ^ 数字
           | JString { jstr :: JAtom String }       -- ^ 字符串
           | JBool   (JAtom Bool)                   -- ^ 布尔值，即 true | false
           | JNull   (JAtom ())                     -- ^ 字面量 null

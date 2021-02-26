@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2fde75ec03bccdbfc0d5765aed42a01ad8a3a986b93c698d79b4a27b93b720d1
+-- hash: f5b516ea1fe0aa54e957c30ae189032f888a2df2f2d6d04a9c518301579a20f1
 
 name:           Jsonr
 version:        0.1.0.0
@@ -30,7 +30,10 @@ library
       JSONDat
       JSONPrinter.Compress
       JSONReader
+      JSONReader.Constant
+      JSONReader.Number
       JSONReader.String
+      JSONReader.Util
   other-modules:
       Paths_Jsonr
   hs-source-dirs:

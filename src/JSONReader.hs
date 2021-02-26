@@ -5,6 +5,10 @@ Maintainer  : lifoz@outlook.com
 
 = 更改记录
 
+== 2021-02-26 16:35:41
+
+重写 'numberParser' 解析器，可以依据 @ECMA-404@ 标准解析数字。
+
 == 2021-02-26 11:08:57
 
 重构部分代码，将字符串和字面量的处理函数移动到 "JSONReader.String" 和
@@ -13,7 +17,7 @@ Maintainer  : lifoz@outlook.com
 
 == 2021-02-23 22:05:10
 
-完成模块编写，做简单测试下一步可能的工作为
+完成模块编写，做简单测试。下一步可能的工作为
 
 * 测试模块的功能和效率，并比对JSON语法标准做调整
 * 替换 'numberParser' 中使用的数字解析函数，添加额外的数字格式
@@ -31,10 +35,11 @@ module JSONReader (jread) where
 
 import           Control.Arrow       (first, second)
 import           Control.Monad.State
-import           Data.Char           (isAlpha, isAlphaNum)
+import           Data.Char           (isAlpha, isAlphaNum, isDigit)
 import           Data.List           (find, isPrefixOf)
 import           JSONDat
 import           JSONReader.Constant (extractConstant)
+import           JSONReader.Number   (extractNumber)
 import           JSONReader.String   (extractString)
 import           JSONReader.Util
 import           Text.Read           (readsPrec)
@@ -53,19 +58,18 @@ import           Text.Read           (readsPrec)
 化为一个 'Fatal' 错误。某些地方可以接受任意合法的JSON值（如数组的每个
 元素），而某些地方只能接受特定类型的值（如对象的键值），具体的解析的尝
 试顺序见 'jValueParser'。每个JSON值之前和之后都可以出现一个或多个注释，
-注释支持行内注释和多行注释两种格式。注释的解析器为 'commentParser'，解
-析规则见 'JSONDat.JComment'。具体的解析规则罗列如下：
+注释支持行内注释和多行注释两种格式。注释的解析器见 'commentParser'，解
+析规则见 'JSONDat.JComment'。具体的JSON解析规则罗列如下：
 
 == 简单数据类型
 
 简单数据类型包括数字，字符串，布尔值，和@NULL@值。
 
-数字将被解析为浮点数，现阶段使用 _Haskell_ 的内置函数解析，以后有可能
-另外编写函数解析，这可以将数字分成更多格式解析，现在的解析函数见
-'numberParser'。字符串的解析函数是 'stringParser' 字符串从双引号开始，
-双引号结束，被包裹的内容都不会解析，接受使用反斜杠转义双引号；除此之外
-不会做更多处理。布尔值和NULL值会一起作为常量用 'constantParser' 解析，
-这只会做简单的字符串匹配。
+数字会被解析为字符串，而非具有实际意义的值，更多数字的解析规则见数字的
+解析函数 'numberParser'。字符串的解析函数是 'stringParser' 字符串从双
+引号开始，双引号结束，被包裹的内容都不会解析，接受使用反斜杠转义双引号；
+除此之外不会做更多处理。布尔值和NULL值会一起作为常量用
+'constantParser' 解析，这只会做简单的字符串匹配。
 
 == 复合数据类型
 
@@ -107,15 +111,12 @@ type JState        = JParsingState JDat
 
 infixl 2 <|>
 (<|>) :: JState -> JState -> JState
--- ^ 连接两个状态，表现为‘或’语意。
+-- ^ 连接两个状态，表达‘或’语意。
 p₁ <|> p₂ = whenOk $ \state₀@(Ok _) ->
   let (result, state₁) = runState p₁ state₀
   in case state₁ of
        Unknown -> p₂
        _       -> put state₁ >> return result
-
-numberParser :: JState
-arrayParser , objectParser :: JState
 
 jValueParser :: JState
 -- ^ 解析所有具有实际意义的JSON值。下面的组合顺序即尝试解析的顺序，遵
@@ -140,7 +141,7 @@ withCheckComment f = commentParser  >>=           \ cmt₁   ->
   whenOk $ \ _ -> skipSpacer >> commentParser >>= \ cmt₂   ->
   whenOk $ \ _ -> return (annotate result cmt₁ cmt₂)
 
-
+arrayParser , objectParser :: JState
 arrayParser = withCheckComment $ \ (Ok dat) ->
   case dat of '[':rest -> put (Ok rest) >> (mapState $ first plainJArray) apaux
               _        -> unknown
@@ -149,7 +150,7 @@ arrayParser = withCheckComment $ \ (Ok dat) ->
         apaux = maybeOk [] extractE
         extractE (Ok [])         = put (Fatal "存在未闭合的数组") >> return []
         extractE (Ok (']':rest)) = put (Ok rest)                  >> return []
-        extractE _  = jValueParser >>= \ elt ->
+        extractE _  = jValueParser >>= \ elt  ->
           ignoreComma ']' >> apaux >>= \ rest ->
           return $ elt:rest
 
@@ -166,15 +167,16 @@ objectParser = withCheckComment $ \ (Ok dat) ->
           ignoreComma        '}' >> opaux        >>= \ restr ->
           return $ (jstr keyr, valr):restr
 
+numberParser :: JState
+-- ^ 解析一个数字。如果流以字符“-”或一个数字开头，则会被识别为一个数字；
+-- 否则返回 'Unknown'。解析标准见 'JSONReader.Number.extractNumber' 或
+-- 者 @ECMA-404@ 标准 *Figure 4* 相应内容。
 numberParser = withCheckComment $ \state₀@(Ok dat) ->
-  case readFloat dat of
-    Nothing                         -> unknown
-    Just (_, rest@(c:_)) | isAlpha c -> die $ "数字后有非法字母 " ++ shorten rest
-    Just (result, rest)             -> put (Ok rest) >> return (plainJNumber result)
-  where readFloat :: String -> Maybe (Float, String)
-        readFloat s₀ = case reads s₀ :: [(Float, String)] of
-                         []  -> Nothing
-                         r:_ -> Just r
+  case dat of
+    s@(c:_) | c == '-' || isDigit c
+              -> extractNumber s `whenRight` \ (s, rest) ->
+                put (Ok rest) >> return s
+    _         -> unknown
 
 stringParser :: JState
 -- ^ 解析一个字符串，字符串必须用双引号包裹。详细的解析方法见
