@@ -1,9 +1,15 @@
 {-|
-Module    : JSONReader
-Description: 基于 _Standard ECMA-404_ 的JSON解析器
-Maintainer: lifoz@outlook.com
+Module      : JSONReader
+Description : 基于 _Standard ECMA-404_ 的JSON解析器
+Maintainer  : lifoz@outlook.com
 
 = 更改记录
+
+== 2021-02-26 11:08:57
+
+重构部分代码，将字符串和字面量的处理函数移动到 "JSONReader.String" 和
+"JSONReader.Constant" 中。将部分不涉及解析细节的函数移动到
+"JSONReader.Util" 中。
 
 == 2021-02-23 22:05:10
 
@@ -25,9 +31,12 @@ module JSONReader (jread) where
 
 import           Control.Arrow       (first, second)
 import           Control.Monad.State
-import           Data.Char           (isAlpha, isAlphaNum, isSpace)
+import           Data.Char           (isAlpha, isAlphaNum)
 import           Data.List           (find, isPrefixOf)
 import           JSONDat
+import           JSONReader.Constant (extractConstant)
+import           JSONReader.String   (extractString)
+import           JSONReader.Util
 import           Text.Read           (readsPrec)
 
 {-|
@@ -105,11 +114,16 @@ p₁ <|> p₂ = whenOk $ \state₀@(Ok _) ->
        Unknown -> p₂
        _       -> put state₁ >> return result
 
-constantParser, numberParser, stringParser :: JState
-arrayParser   , objectParser, jValueParser :: JState
+numberParser :: JState
+arrayParser , objectParser :: JState
 
-jValueParser = objectParser <|> arrayParser  <|>
-               stringParser <|> numberParser <|> constantParser
+jValueParser :: JState
+-- ^ 解析所有具有实际意义的JSON值。下面的组合顺序即尝试解析的顺序，遵
+-- 从 @ECMA-404@ 文档中 *Figure 1* 的顺序。如果所有的解析器都不能解析，
+-- 'jValueParser' 不做额外处理，直接设置 'Unknown' 标志。
+jValueParser = objectParser <|> arrayParser
+           <|> numberParser <|> stringParser
+           <|> constantParser
 
 withCheckComment :: (ParsingFlag -> JState) -> JState
 -- ^ 接受一个解析函数，在运行这个函数之前和之后检查表达式周围的注释。
@@ -162,24 +176,24 @@ numberParser = withCheckComment $ \state₀@(Ok dat) ->
                          []  -> Nothing
                          r:_ -> Just r
 
+stringParser :: JState
+-- ^ 解析一个字符串，字符串必须用双引号包裹。详细的解析方法见
+-- 'JSONReader.String.extractString'
 stringParser = withCheckComment $ \state₀@(Ok dat) ->
-  case dat of '\"':rest -> spaux rest
-              _         -> unknown
-  where spaux      :: String -> JState
-        str2jstate :: (String, String) -> JState
-        spaux s = maybe (die "存在未闭合的字符串") str2jstate (extraString s)
-        str2jstate (str, rest) = put (Ok rest) >> return (plainJString str)
+  case dat of '\"':_ -> extractString dat `whenRight` \ (str, rest) ->
+                put (Ok rest) >> return (plainJString str)
+              _      -> unknown
 
+constantParser :: JState
+-- ^ 处理 @true@、 @false@ 和 @null@ 三个字面量。约定如果字符流以一个
+-- *Unicode* 单词开始会被认为是一个字面量，如 @true@、 @foo10@、@你好@
+-- 等等，如果不被认为是一个字面量的值会返回 'Unknown'，否则会被
+-- 'JSONReader.Constant.extractConstant' 解析，如果解析失败会返回
+-- 'Fatal' 。
 constantParser = withCheckComment $ \state₀@(Ok dat) ->
-  case find (\ (k, _) -> k `isPrefixOf` dat) alist of
-    Nothing     -> unknown
-    Just (k, v) -> case drop (length k) dat of
-                     c:cs | isAlphaNum c || c == '_' ->
-                            die $ "存在未知的字面量 " ++ shorten dat
-                     dat' -> put (Ok dat') >> return v
-  where alist = [ ("true", plainJBool True)
-                , ("false", plainJBool False)
-                , ("null", plainJNull)]
+  case dat of c:_ | isAlpha c -> extractConstant dat `whenRight` \ (v, rest) ->
+                      put (Ok rest) >> return v
+              _               -> unknown
 
 commentParser :: JParsingState [JComment]
 -- ^ 提取注释，不能用于解析器的组合。当发现多行注释未闭合时会设置
@@ -202,23 +216,6 @@ commentParser = maybeOk [] $ \ state₀@(Ok dat) ->
         makComment (c, Ok s) = put (Ok $ skipSpace s) >> return c
         makComment (_, err)  = put err >> return []
 
-extraString :: String -> Maybe (String, String)
-extraString s₀ = case break (\c -> c == '"' || c == '\\') s₀ of
-                  (_, [])        -> Nothing
-                  (s₁, '"':r)    -> Just (s₁, r)
-                  (s₁, '\\':c:r) -> first ((s₁ ++ ['\\', c]) ++) <$> extraString r
-                  (_,  '\\':[])  -> Nothing
-
-shorten :: String -> String
-shorten = add . takeWhile (not.isSpace) . take 5
-  where add s = if length s <= 5 then [] else s ++ "..."
-
-skipSpace :: String -> String
-skipSpace = dropWhile isSpace
-
-skipSpacer :: JParsingState ()
-skipSpacer = maybeOk () $ \ (Ok s) -> put . Ok . skipSpace $ s
-
 die :: ErrorMsg -> JState
 die msg = put (Fatal msg) >> return JNothing
 
@@ -236,6 +233,12 @@ maybeOk d f = get >>= \state₀ ->
 
 whenOk :: (ParsingFlag -> JState) -> JState
 whenOk = maybeOk JNothing
+
+whenRight :: Either String b -> (b -> JState) -> JState
+whenRight = flip $ either die
+
+skipSpacer :: JParsingState ()
+skipSpacer = maybeOk () $ \ (Ok s) -> put . Ok . skipSpace $ s
 
 nextCharShould :: (Char -> Bool) -> JState
 -- ^ 接受一个谓词，检查下一个字符是否符合谓词，如果不符合会将状态转为
