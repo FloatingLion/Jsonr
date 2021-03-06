@@ -1,18 +1,17 @@
 {
-    "widget"/* My favorite widget. */: {
-	/// why we are debuging?
-	"debug": "on",
+    "widget"/* 这是我最喜欢的 WIDGET */: {
+	"debug": "on"/* 人为什么要调试？ */,
 	"window": {
-	    "title" /* 这个名字不是我取的 */: "Sample Konfabulator Widget",
+	    "title":/* 这个名字不是我取的 */ "Sample Konfabulator Widget",
 	    "name": "main_window",
-	    "width": 500,
-	    "height": 500
-	},
+	    "width": 500,   // 长方形的
+	    "height": 500   // 会不会好
+	},                  // 一点？
 	"image": {
 	    // 这张图片我看过
 	    // 但记不清是什么时候
-	    ///
-	    /* Really! */
+	    ///       ///
+	    /* 真的！ */
 	    "src": "Images/Sun.png",
 	    "name": "sun1",
 	    "hOffset": 250,
@@ -33,6 +32,8 @@
 	    "vOffset": 100,
 	    "alignment": "center",
 	    "onMouseUp": "sun1.opacity = (sun1.opacity / 100) * 90;"
-	}
-    }
-}
+	} // endtext
+    } // end widget
+} // end file
+///  end of file
+/****************/

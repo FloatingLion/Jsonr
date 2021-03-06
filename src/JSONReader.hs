@@ -5,6 +5,26 @@ Maintainer  : lifoz@outlook.com
 
 = 更改记录
 
+== 2021-03-06 14:20:45
+
+修改所有解析函数，其不在内部检查周围的注释。
+
+这个修改是源于以下考虑。JSON解析中只存在两种可能的项：
+
+- (number|string|constant|array|object)
+- string
+
+其中第二个仅在对象的键值中出现。因此，现在仅在两个地方调用注释解析函数
+（ 'withCheckComment' ）：
+
+- 'jvalueParser'
+- 'objectParser' 中解析键值时
+
+这样做可以减少重复匹配。但要注意：不能再单独调用各个解析器，能够被外界
+调用的解析器只有 'jvalueParser' ，其他解析器或被 'jvalueParser' 调用，
+或在包裹着 'withCheckComment' 地调用。最后，约定所有解析器假定输入的数
+据是正常的（即 'Ok'）。
+
 == 2021-03-06 13:38:35
 
 为 arrayParser 和 objectParser 的开括号后添加 skipSpace。
@@ -126,9 +146,10 @@ jValueParser :: JState
 -- ^ 解析所有具有实际意义的JSON值。下面的组合顺序即尝试解析的顺序，遵
 -- 从 @ECMA-404@ 文档中 *Figure 1* 的顺序。如果所有的解析器都不能解析，
 -- 'jValueParser' 不做额外处理，直接设置 'Unknown' 标志。
-jValueParser = objectParser <|> arrayParser
-           <|> numberParser <|> stringParser
-           <|> constantParser
+jValueParser = withCheckComment $ \ (Ok dat)
+  -> objectParser     <|> arrayParser
+     <|> numberParser <|> stringParser
+     <|> constantParser
 
 withCheckComment :: (ParsingFlag -> JState) -> JState
 -- ^ 接受一个解析函数，在运行这个函数之前和之后检查表达式周围的注释。
@@ -146,7 +167,7 @@ withCheckComment f = commentParser  >>=           \ cmt₁   ->
   whenOk $ \ _ -> return (annotate result cmt₁ cmt₂)
 
 arrayParser , objectParser :: JState
-arrayParser = withCheckComment $ \ (Ok dat) ->
+arrayParser = get >>= \ (Ok dat) ->
   case dat of '[':rest -> put (Ok (skipSpace rest))
                           >> (mapState $ first plainJArray) apaux
               _        -> unknown
@@ -159,7 +180,7 @@ arrayParser = withCheckComment $ \ (Ok dat) ->
           ignoreComma ']' >> apaux >>= \ rest ->
           return $ elt:rest
 
-objectParser = withCheckComment $ \ (Ok dat) ->
+objectParser = get >>= \ (Ok dat) ->
   case dat of '{':rest -> put (Ok (skipSpace rest))
                           >> (mapState $ first plainJObject) opaux
               _        -> unknown
@@ -168,7 +189,8 @@ objectParser = withCheckComment $ \ (Ok dat) ->
         opaux = maybeOk [] extractO
         extractO (Ok [])        = put (Fatal "存在未闭合的对象") >> return []
         extractO (Ok ('}':r))   = put (Ok r)                     >> return []
-        extractO _              =   stringParser >>= \ keyr  ->
+        extractO _              =
+          withCheckComment (const stringParser)  >>= \ keyr  ->
           nextCharShould (==':') >> jValueParser >>= \ valr  ->
           ignoreComma        '}' >> opaux        >>= \ restr ->
           return $ (jstr keyr, valr):restr
@@ -177,7 +199,7 @@ numberParser :: JState
 -- ^ 解析一个数字。如果流以字符“-”或一个数字开头，则会被识别为一个数字；
 -- 否则返回 'Unknown'。解析标准见 'JSONReader.Number.extractNumber' 或
 -- 者 @ECMA-404@ 标准 *Figure 4* 相应内容。
-numberParser = withCheckComment $ \state₀@(Ok dat) ->
+numberParser = get >>= \state₀@(Ok dat) ->
   case dat of
     s@(c:_) | c == '-' || isDigit c
               -> extractNumber s `whenRight` \ (s, rest) ->
@@ -187,7 +209,7 @@ numberParser = withCheckComment $ \state₀@(Ok dat) ->
 stringParser :: JState
 -- ^ 解析一个字符串，字符串必须用双引号包裹。详细的解析方法见
 -- 'JSONReader.String.extractString'
-stringParser = withCheckComment $ \state₀@(Ok dat) ->
+stringParser = get >>= \state₀@(Ok dat) ->
   case dat of '\"':_ -> extractString dat `whenRight` \ (str, rest) ->
                 put (Ok rest) >> return (plainJString str)
               _      -> unknown
@@ -198,7 +220,7 @@ constantParser :: JState
 -- 等等，如果不被认为是一个字面量的值会返回 'Unknown'，否则会被
 -- 'JSONReader.Constant.extractConstant' 解析，如果解析失败会返回
 -- 'Fatal' 。
-constantParser = withCheckComment $ \state₀@(Ok dat) ->
+constantParser = get >>= \state₀@(Ok dat) ->
   case dat of c:_ | isAlpha c -> extractConstant dat `whenRight` \ (v, rest) ->
                       put (Ok rest) >> return v
               _               -> unknown
