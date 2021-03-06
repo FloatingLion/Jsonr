@@ -5,6 +5,10 @@ Maintainer  : lifoz@outlook.com
 
 = 更改记录
 
+== 2021-03-06 13:38:35
+
+为 arrayParser 和 objectParser 的开括号后添加 skipSpace。
+
 == 2021-02-26 16:35:41
 
 重写 'numberParser' 解析器，可以依据 @ECMA-404@ 标准解析数字。
@@ -143,7 +147,8 @@ withCheckComment f = commentParser  >>=           \ cmt₁   ->
 
 arrayParser , objectParser :: JState
 arrayParser = withCheckComment $ \ (Ok dat) ->
-  case dat of '[':rest -> put (Ok rest) >> (mapState $ first plainJArray) apaux
+  case dat of '[':rest -> put (Ok (skipSpace rest))
+                          >> (mapState $ first plainJArray) apaux
               _        -> unknown
   where apaux    :: JParsingState [JDat]
         extractE :: ParsingFlag -> JParsingState [JDat]
@@ -155,7 +160,8 @@ arrayParser = withCheckComment $ \ (Ok dat) ->
           return $ elt:rest
 
 objectParser = withCheckComment $ \ (Ok dat) ->
-  case dat of '{':rest -> put (Ok rest) >> (mapState $ first plainJObject) opaux
+  case dat of '{':rest -> put (Ok (skipSpace rest))
+                          >> (mapState $ first plainJObject) opaux
               _        -> unknown
   where extractO :: ParsingFlag -> JParsingState [(JAtom String, JDat)]
         opaux    :: JParsingState [(JAtom String, JDat)]
