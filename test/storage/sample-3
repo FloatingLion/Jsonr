@@ -1,0 +1,38 @@
+{
+    "widget"/* My favorite widget. */: {
+	/// why we are debuging?
+	"debug": "on",
+	"window": {
+	    "title" /* 这个名字不是我取的 */: "Sample Konfabulator Widget",
+	    "name": "main_window",
+	    "width": 500,
+	    "height": 500
+	},
+	"image": {
+	    // 这张图片我看过
+	    // 但记不清是什么时候
+	    ///
+	    /* Really! */
+	    "src": "Images/Sun.png",
+	    "name": "sun1",
+	    "hOffset": 250,
+	    "vOffset": 250,
+	    "alignment": "center"
+	},
+	/**
+	 * 剩余部分都非常关键
+	 * 当然不是相对于我们的测试而言
+	 */
+	"text": {
+	    "data": "Click Here"// 点了之后会发生什么？
+	    ,
+	    "size": 36,
+	    "style": "bold",
+	    "name": "text1/* 一个很随意的名字 */",
+	    "hOffset": 250,
+	    "vOffset": 100,
+	    "alignment": "center",
+	    "onMouseUp": "sun1.opacity = (sun1.opacity / 100) * 90;"
+	}
+    }
+}

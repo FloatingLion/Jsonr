@@ -94,7 +94,7 @@ import           Text.Read           (readsPrec)
 
 -}
 jread :: String -> Either String JDat
-jread s = let (result, flag) = runState jValueParser (Ok s)
+jread s = let (result, flag) = runState jValueParser (Ok (skipSpace s))
           in case flag of Unknown   -> Left  "传入的数据无法解析"
                           Fatal msg -> Left  msg
                           Ok []     -> Right result

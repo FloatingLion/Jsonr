@@ -25,6 +25,7 @@ dependencies:
 - directory >= 1
 - filepath
 - hspec >= 2.7
+- unicode-show
 
 library:
   source-dirs: src

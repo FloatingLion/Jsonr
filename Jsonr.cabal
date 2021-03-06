@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9c11d4a0cb02cdd0fa35fab6ff11755bb3b5b2a687152d6b6f69ac3d0e8aa70f
+-- hash: 797e341eb82d3d5b578433104de4a947199315b0b0377a0492061553093b5ead
 
 name:           Jsonr
 version:        0.1.0.0
@@ -44,6 +44,7 @@ library
     , filepath
     , hspec >=2.7
     , mtl >=2
+    , unicode-show
   default-language: Haskell2010
 
 executable Jsonr-exe
@@ -60,12 +61,14 @@ executable Jsonr-exe
     , filepath
     , hspec >=2.7
     , mtl >=2
+    , unicode-show
   default-language: Haskell2010
 
 test-suite Jsonr-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      PrinterSpec.JSONCompressSpec
       ReaderSpec.JConstantSpec
       ReaderSpec.JNumberSpec
       ReaderSpec.JStringSpec
@@ -80,4 +83,5 @@ test-suite Jsonr-test
     , filepath
     , hspec >=2.7
     , mtl >=2
+    , unicode-show
   default-language: Haskell2010
