@@ -4,7 +4,7 @@ module JSONReader.Number (extractNumber) where
 import           Control.Arrow   (first)
 import           Data.Char       (isDigit, isSpace)
 import           JSONDat
-import           JSONReader.Util
+import           JSONReader.Util (plainJNumber, shorten)
 
 extractNumber :: String -> Either String (JDat, String)
 {-^

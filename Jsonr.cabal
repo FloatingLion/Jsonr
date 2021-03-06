@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f5b516ea1fe0aa54e957c30ae189032f888a2df2f2d6d04a9c518301579a20f1
+-- hash: 9c11d4a0cb02cdd0fa35fab6ff11755bb3b5b2a687152d6b6f69ac3d0e8aa70f
 
 name:           Jsonr
 version:        0.1.0.0
@@ -66,6 +66,9 @@ test-suite Jsonr-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      ReaderSpec.JConstantSpec
+      ReaderSpec.JNumberSpec
+      ReaderSpec.JStringSpec
       Paths_Jsonr
   hs-source-dirs:
       test
