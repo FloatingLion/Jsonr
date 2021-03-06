@@ -1,3 +1,11 @@
+{-|
+Module: Main
+Description: 单元测试的主模块
+
+如果要运行该测试，需要设置环境变量 @JSONR_TEST_DIRECTORY@ 指向该文件所
+在的目录。
+
+-}
 module Main where
 
 import qualified PrinterSpec.JSONCompressSpec

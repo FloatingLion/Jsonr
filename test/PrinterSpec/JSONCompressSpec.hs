@@ -14,7 +14,8 @@ compress filename = do
 
 compressTest :: FilePath -> IO Bool
 compressTest filename = do
-  storage <- getEnv "JSONR_TEST_DIRECTORY"
+  testdir <- getEnv "JSONR_TEST_DIRECTORY"
+  let storage = testdir </> "storage"
   let filename' = storage </> filename
   compressed <- compress filename'
   expected <- readFile (filename' ++ ".expected")
