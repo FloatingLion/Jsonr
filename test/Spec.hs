@@ -9,6 +9,7 @@ Description: 单元测试的主模块
 module Main where
 
 import qualified PrinterSpec.JSONCompressSpec
+import qualified PrinterSpec.JSONPrettySpec
 import qualified ReaderSpec.JConstantSpec
 import qualified ReaderSpec.JNumberSpec
 import qualified ReaderSpec.JStringSpec
@@ -22,3 +23,6 @@ main = hspec $ do
 
   describe "JSON数据压缩器" $ do
     PrinterSpec.JSONCompressSpec.spec
+
+  describe "JSON数据美化打印" $ do
+    PrinterSpec.JSONPrettySpec.spec

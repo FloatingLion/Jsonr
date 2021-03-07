@@ -1,0 +1,8 @@
+
+{
+"name":"网站",
+"num":3,
+"sites":[ "Google", "Runoob", "Taobao" ],
+"info":{ "useful":false },
+"really":{"said":[true,true,true]},
+"years":["1996", "2021", {"favorite":"Dog"}, "2030"]}

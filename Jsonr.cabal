@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 797e341eb82d3d5b578433104de4a947199315b0b0377a0492061553093b5ead
+-- hash: 8dfef2446d5a2ffe133520aa95dcbba1c9df18db846d3d0cdd713dc01033d01d
 
 name:           Jsonr
 version:        0.1.0.0
@@ -29,6 +29,8 @@ library
   exposed-modules:
       JSONDat
       JSONPrinter.Compress
+      JSONPrinter.Pretty
+      JSONPrinter.Util
       JSONReader
       JSONReader.Constant
       JSONReader.Number
@@ -69,6 +71,8 @@ test-suite Jsonr-test
   main-is: Spec.hs
   other-modules:
       PrinterSpec.JSONCompressSpec
+      PrinterSpec.JSONPrettySpec
+      PrinterSpec.Util
       ReaderSpec.JConstantSpec
       ReaderSpec.JNumberSpec
       ReaderSpec.JStringSpec

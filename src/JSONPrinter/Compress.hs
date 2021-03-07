@@ -2,7 +2,6 @@ module JSONPrinter.Compress (jprint) where
 
 import           Data.List         (intercalate)
 import           JSONDat           (JAtom (..), JDat (..))
-import           JSONReader        (jread)
 import           Text.Show.Unicode (ushow)
 
 jprint :: JDat -> String
