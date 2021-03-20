@@ -26,14 +26,15 @@ dependencies:
 - filepath
 - hspec >= 2.7
 - lens
+- optparse-applicative
 
 library:
   source-dirs: src
 
 executables:
-  Jsonr-exe:
+  Jsonr-trans:
     main:                Main.hs
-    source-dirs:         app
+    source-dirs:         app/Jsonr-trans
     ghc-options:
     - -threaded
     - -rtsopts
