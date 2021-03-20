@@ -71,10 +71,11 @@ import           JSONReader.Number   (extractNumber)
 import           JSONReader.String   (extractString)
 import           JSONReader.Util
 
-{-|
+jnRead :: String -> Either String JNDat
+{-^
 
 读取一个字符串，尝试按照JSON的语法规则解析这个字符串，如果成功解析则返
-回这个字符串对应的用 'JDat' 表示的字符串，否则返回一则包含错简单错误提
+回这个字符串对应的用 'JNDat' 表示的字符串，否则返回一则包含错简单错误提
 示的字符串。所有的解析函数都是 State 单子，解析状态定义为三个标志：
 
 * 'Unknown' 代表该解析器不能识别这个字符串。
@@ -120,7 +121,6 @@ import           JSONReader.Util
 别见 'arrayParser' 和 'objectParser'。
 
 -}
-jnRead :: String -> Either String JNDat
 jnRead s = let (result, flag) = runState jValueParser (Ok (skipSpace s))
           in case flag of Unknown   -> Left  "传入的数据无法解析"
                           Fatal msg -> Left  msg
