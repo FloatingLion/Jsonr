@@ -10,8 +10,27 @@ import           Options.Applicative
 import           System.Directory     (doesFileExist)
 import           System.IO
 
-main = undefined
+main = do
+  opt <- execParser opts
+  let ipath = inFilename opt
+  ok <- doesFileExist ipath
+  if not ok
+    then putStrLn $ "文件" ++ ipath ++ "不存在\n  程序异常终止"
+    else do
+    icont <- readFile ipath
+    case transform icont opt of
+      Left err -> putStrLn $ "错误：" ++ err ++ "\n  程序异常终止"
+      Right r  -> if null (outFilename opt)
+                  then putStrLn r
+                  else writeFile (outFilename opt) (r ++ "\n")
 
+transform s opt
+  = either Left `flip` jnRead s $ \ dat -> Right $
+  if shouldCompress opt
+  then C.jnPrint dat
+  else if careComment opt
+       then PC.jnPrint dat
+       else P.jnPrint dat
 
 data TransOptions = TransOptions
   { inFilename     :: FilePath
