@@ -1,7 +1,9 @@
 # Changelog for Jsonr
 
 
+### 0.2
 
+修改数据结构接口，支持Lens，已通过基本测试。
 
 ### 0.1
 

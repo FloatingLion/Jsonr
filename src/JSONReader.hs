@@ -5,6 +5,10 @@ Maintainer  : lifoz@outlook.com
 
 = 更改记录
 
+== 2021-03-20 11:34:24
+
+重构 'JNDat' 数据结构，将 'jread' 更名为 'jnRead' 。
+
 == 2021-03-06 14:20:45
 
 修改所有解析函数，其不在内部检查周围的注释。
@@ -47,15 +51,15 @@ Maintainer  : lifoz@outlook.com
 * 替换 'numberParser' 中使用的数字解析函数，添加额外的数字格式
 * 尝试重构 'arrayParser' 和 'objectParser'，减少模式匹配
 
-另外，因为注释会被视为JSON值的一部分（见 'JAtom'），所以匹配时会导致注
+另外，因为注释会被视为JSON值的一部分（见 'JNDat'），所以匹配时会导致注
 释的重复解析。具体地讲，前缀注释解析之后才会解析实际的JSON值，如果相应
 的解析器返回 'Unknown'，整个 'withCheckComment' 块会返回 'Unknown'，而
 下一个被包裹在 'withCheckComment' 中的解析器会再次解析前缀注释。这个问
-题的一个解决方案是将大部分 'jread' 的逻辑移动到 'withCheckComment' 中，
+题的一个解决方案是将大部分 'jnRead' 的逻辑移动到 'withCheckComment' 中，
 但在此先保留这个优化。
 
 -}
-module JSONReader (jread) where
+module JSONReader (jnRead) where
 
 import           Control.Arrow       (first, second)
 import           Control.Monad.State
@@ -66,7 +70,6 @@ import           JSONReader.Constant (extractConstant)
 import           JSONReader.Number   (extractNumber)
 import           JSONReader.String   (extractString)
 import           JSONReader.Util
-import           Text.Read           (readsPrec)
 
 {-|
 
@@ -78,7 +81,7 @@ import           Text.Read           (readsPrec)
 * 'Fatal'   解析器可识别这个字符串，但在解析时发现语法错误。
 * 'Ok'      代表但前解析正确，包含剩余的未解析字符串。
 
-如果发现所有合法的解析器都不能够解析某个字符串，函数 'jread' 会将其转
+如果发现所有合法的解析器都不能够解析某个字符串，函数 'jnRead' 会将其转
 化为一个 'Fatal' 错误。某些地方可以接受任意合法的JSON值（如数组的每个
 元素），而某些地方只能接受特定类型的值（如对象的键值），具体的解析的尝
 试顺序见 'jValueParser'。每个JSON值之前和之后都可以出现一个或多个注释，
@@ -117,21 +120,19 @@ import           Text.Read           (readsPrec)
 别见 'arrayParser' 和 'objectParser'。
 
 -}
-jread :: String -> Either String JDat
-jread s = let (result, flag) = runState jValueParser (Ok (skipSpace s))
+jnRead :: String -> Either String JNDat
+jnRead s = let (result, flag) = runState jValueParser (Ok (skipSpace s))
           in case flag of Unknown   -> Left  "传入的数据无法解析"
                           Fatal msg -> Left  msg
                           Ok []     -> Right result
-                          Ok _      -> Left  "传入的数据格式错误"
-
-type ErrorMsg = String
-type Stream   = String
+                          Ok _      -> Left  "传入的数据格式错误，可能存在多余数据"
 
 data ParsingFlag = Unknown
-                 | Fatal   ErrorMsg
-                 | Ok      Stream   deriving (Show)
+                 | Fatal   String
+                 | Ok      String
+                 deriving (Show)
 type JParsingState = State ParsingFlag
-type JState        = JParsingState JDat
+type JState        = JParsingState JNDat
 
 infixl 2 <|>
 (<|>) :: JState -> JState -> JState
@@ -157,22 +158,22 @@ withCheckComment :: (ParsingFlag -> JState) -> JState
 -- 个 'JState' 不解析（周围的）注释，如果解析器消耗了注释会导致位于代
 -- 码之后的注释丢失。如果注释解析发生失败（即 'Fatal'），函数会忽略参
 -- 数函数的解析结果直接返回错误信息。注释的具体内容参见
--- 'JSONDat.JComment'
+-- 'JSONDat.JNComment'
 --
 -- 这个函数不会调用仅会在注释周围调用 'skipSpace'，不会在调用结束时，
 -- 也就是尾部注释之后调用 'skipSpace'
 withCheckComment f = commentParser  >>=           \ cmt₁   ->
   whenOk $ \ _ -> skipSpacer >> get >>= f     >>= \ result ->
   whenOk $ \ _ -> skipSpacer >> commentParser >>= \ cmt₂   ->
-  whenOk $ \ _ -> return (annotate result cmt₁ cmt₂)
+  whenOk $ \ _ -> return (annotate cmt₁ cmt₂ result)
 
-arrayParser , objectParser :: JState
+arrayParser, objectParser :: JState
 arrayParser = get >>= \ (Ok dat) ->
   case dat of '[':rest -> put (Ok (skipSpace rest))
-                          >> (mapState $ first plainJArray) apaux
+                          >> (mapState $ first plainJNArray) apaux
               _        -> unknown
-  where apaux    :: JParsingState [JDat]
-        extractE :: ParsingFlag -> JParsingState [JDat]
+  where apaux    :: JParsingState [JNDat]
+        extractE :: ParsingFlag -> JParsingState [JNDat]
         apaux = maybeOk [] extractE
         extractE (Ok [])         = put (Fatal "存在未闭合的数组") >> return []
         extractE (Ok (']':rest)) = put (Ok rest)                  >> return []
@@ -182,10 +183,10 @@ arrayParser = get >>= \ (Ok dat) ->
 
 objectParser = get >>= \ (Ok dat) ->
   case dat of '{':rest -> put (Ok (skipSpace rest))
-                          >> (mapState $ first plainJObject) opaux
+                          >> (mapState $ first plainJNObject) opaux
               _        -> unknown
-  where extractO :: ParsingFlag -> JParsingState [(JAtom String, JDat)]
-        opaux    :: JParsingState [(JAtom String, JDat)]
+  where extractO :: ParsingFlag -> JParsingState [(JNDat, JNDat)]
+        opaux    :: JParsingState [(JNDat, JNDat)]
         opaux = maybeOk [] extractO
         extractO (Ok [])        = put (Fatal "存在未闭合的对象") >> return []
         extractO (Ok ('}':r))   = put (Ok r)                     >> return []
@@ -193,7 +194,7 @@ objectParser = get >>= \ (Ok dat) ->
           withCheckComment (const stringParser)  >>= \ keyr  ->
           nextCharShould (==':') >> jValueParser >>= \ valr  ->
           ignoreComma        '}' >> opaux        >>= \ restr ->
-          return $ (jstr keyr, valr):restr
+          return $ (keyr, valr):restr
 
 numberParser :: JState
 -- ^ 解析一个数字。如果流以字符“-”或一个数字开头，则会被识别为一个数字；
@@ -203,7 +204,7 @@ numberParser = get >>= \state₀@(Ok dat) ->
   case dat of
     s@(c:_) | c == '-' || isDigit c
               -> extractNumber s `whenRight` \ (s, rest) ->
-                put (Ok rest) >> return s
+                put (Ok rest) >> return (plainJNScalar s)
     _         -> unknown
 
 stringParser :: JState
@@ -211,7 +212,7 @@ stringParser :: JState
 -- 'JSONReader.String.extractString'
 stringParser = get >>= \state₀@(Ok dat) ->
   case dat of '\"':_ -> extractString dat `whenRight` \ (str, rest) ->
-                put (Ok rest) >> return (plainJString str)
+                put (Ok rest) >> return (plainJNScalar str)
               _      -> unknown
 
 constantParser :: JState
@@ -222,18 +223,18 @@ constantParser :: JState
 -- 'Fatal' 。
 constantParser = get >>= \state₀@(Ok dat) ->
   case dat of c:_ | isAlpha c -> extractConstant dat `whenRight` \ (v, rest) ->
-                      put (Ok rest) >> return v
+                      put (Ok rest) >> return (plainJNScalar v)
               _               -> unknown
 
-commentParser :: JParsingState [JComment]
+commentParser :: JParsingState [JNComment]
 -- ^ 提取注释，不能用于解析器的组合。当发现多行注释未闭合时会设置
 -- 'Fatal' 状态。不会返回 'Unknown'。不会在内部调用 'skipSpace'。
 commentParser = maybeOk [] $ \ state₀@(Ok dat) ->
   case dat of
     '/':'/':r -> makComment (inlineParser r)    >>= \ cmt ->
-      first (JInlineComment cmt:) `mapState` commentParser
+      first (JNInlineComment cmt:) `mapState` commentParser
     '/':'*':r -> makComment (multilineParser r) >>= \ cmt ->
-      first (JMultilineComment cmt:) `mapState` commentParser
+      first (JNMultilineComment cmt:) `mapState` commentParser
     _         -> return []
   where makComment :: (String, ParsingFlag) -> JParsingState String
         inlineParser, multilineParser :: String -> (String, ParsingFlag)
@@ -246,7 +247,7 @@ commentParser = maybeOk [] $ \ state₀@(Ok dat) ->
         makComment (c, Ok s) = put (Ok $ skipSpace s) >> return c
         makComment (_, err)  = put err >> return []
 
-die :: ErrorMsg -> JState
+die :: String -> JState
 die msg = put (Fatal msg) >> return JNothing
 
 unknown :: JState

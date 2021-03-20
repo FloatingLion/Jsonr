@@ -38,55 +38,51 @@ Description: 美观打印JSON数据
 
 
 -}
-module JSONPrinter.Pretty (jprint) where
+module JSONPrinter.Pretty (jnPrint) where
 
-import           Data.List         (intercalate)
+import           Data.List        (intercalate)
 import           JSONDat
 import           JSONPrinter.Util
-import           JSONReader        (jread)
-import           Text.Show.Unicode (ushow)
+import           JSONReader       (jnRead)
 
-jprint :: JDat -> String
-jprint = jprint' 0
+jnPrint :: JNDat -> String
+jnPrint = jnPrint' 0
 
 
-jprint' :: Int    -- ^ 语法深度
-        -> JDat   -- ^ 数据
-        -> String -- ^ 打印结果
-jprint' _ (JNumber a) = jval a
-jprint' _ (JString a) = ushow (jval a)
-jprint' _ (JBool a) = if jval a then "true" else "false"
-jprint' _ (JNull _) = "null"
-jprint' depth array@(JArray a) =
-  if and $ map isSimpleJData (jval a)
+jnPrint' :: Int    -- ^ 语法深度
+        -> JNDat   -- ^ 数据
+        -> String  -- ^ 打印结果
+jnPrint' _ (JNScalar _ v _) = v
+jnPrint' depth array@(JNArray _ a _) =
+  if and $ map isSimpleJNDat a
   then inlinePrint array
   else multilinePrint depth array
-jprint' depth object@(JObject a) =
-  case jval a of
-    [(_, v)] | isSimpleJData v -> inlinePrint object
+jnPrint' depth object@(JNObject _ a _) =
+  case a of
+    [(_, v)] | isSimpleJNDat v -> inlinePrint object
     []                         -> "{ }"
     _                          -> multilinePrint depth object
 
-inlinePrint :: JDat -> String
-multilinePrint :: Int -> JDat -> String
+inlinePrint :: JNDat -> String
+multilinePrint :: Int -> JNDat -> String
 
-inlinePrint (JArray a)
-  = "[" ++ visualize (jval a) ++ " ]"
-  where visualize = intercalate "," . map ((' ':).jprint)
+inlinePrint (JNArray _ a _)
+  = "[" ++ visualize a ++ " ]"
+  where visualize = intercalate "," . map ((' ':).jnPrint)
 
-inlinePrint (JObject a)
-  = let [(k, v)] = jval a
-    in "{ " ++ ushow (jval k) ++ ": " ++ jprint v ++ " }"
+inlinePrint (JNObject _ a _)
+  = let [(k, v)] = a
+    in "{ " ++ jnPrint k ++ ": " ++ jnPrint v ++ " }"
 
-multilinePrint depth (JArray a)
+multilinePrint depth (JNArray _ a _)
   = "[\n" ++ intercalate ",\n" items ++ "\n" ++ tabs depth ++ "]"
-  where items = map ((tabs (1 + depth)++) . jprint' (1 + depth)) (jval a)
+  where items = map ((tabs (1 + depth)++) . jnPrint' (1 + depth)) a
 
-multilinePrint depth (JObject a)
+multilinePrint depth (JNObject _ a _)
   = "{\n" ++ intercalate ",\n" items ++ "\n" ++ tabs depth ++ "}"
-  where items = flip map (jval a) $ \ (k, v) ->
+  where items = flip map a $ \ (k, v) ->
           let newDepth = 1 + depth
-          in tabs newDepth ++ ushow (jval k) ++ ": " ++ jprint' newDepth v
+          in tabs newDepth ++ jnPrint k ++ ": " ++ jnPrint' newDepth v
 
 tabs :: Int -> String
 tabs n = replicate (4 * n) ' '

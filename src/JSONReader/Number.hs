@@ -3,10 +3,9 @@ module JSONReader.Number (extractNumber) where
 
 import           Control.Arrow   (first)
 import           Data.Char       (isDigit, isSpace)
-import           JSONDat
-import           JSONReader.Util (plainJNumber, shorten)
+import           JSONReader.Util (shorten)
 
-extractNumber :: String -> Either String (JDat, String)
+extractNumber :: String -> Either String (String, String)
 {-^
 解析JSON数字。按照 @ECMA-404@ 标准，一个JSON数字是一个十进制数，
 数字之前不能有多余的0和符号（即 @+@），不接受隐式浮点数（见下例），
@@ -60,8 +59,7 @@ extractNumber :: String -> Either String (JDat, String)
 最后，该函数约定字符流的第一个字符应当为“-”或“0..9”之一，否则返回错误。
 
 -}
-extractNumber = either Left (Right . first plainJNumber) . stepA
-
+extractNumber = stepA
 
 type Step = String -> Either String (String, String)
 

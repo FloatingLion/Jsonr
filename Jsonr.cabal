@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8dfef2446d5a2ffe133520aa95dcbba1c9df18db846d3d0cdd713dc01033d01d
+-- hash: 21162a7b7ec48f3cea8e9702615f2d4cb32a32eb59cd4d03e2f3112f5719dd6c
 
 name:           Jsonr
 version:        0.1.0.0
@@ -18,7 +18,7 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    README.md
+    README.org
     ChangeLog.md
 
 source-repository head
@@ -36,6 +36,7 @@ library
       JSONReader.Number
       JSONReader.String
       JSONReader.Util
+      JSONUtil
   other-modules:
       Paths_Jsonr
   hs-source-dirs:
@@ -45,8 +46,8 @@ library
     , directory >=1
     , filepath
     , hspec >=2.7
+    , lens
     , mtl >=2
-    , unicode-show
   default-language: Haskell2010
 
 executable Jsonr-exe
@@ -62,8 +63,8 @@ executable Jsonr-exe
     , directory >=1
     , filepath
     , hspec >=2.7
+    , lens
     , mtl >=2
-    , unicode-show
   default-language: Haskell2010
 
 test-suite Jsonr-test
@@ -86,6 +87,6 @@ test-suite Jsonr-test
     , directory >=1
     , filepath
     , hspec >=2.7
+    , lens
     , mtl >=2
-    , unicode-show
   default-language: Haskell2010
