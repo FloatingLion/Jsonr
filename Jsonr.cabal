@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1c1c4b77463cb066b7ee00022470b5a0e724e5f57cd97c35d23356a5d9c348cc
+-- hash: 5017227aa51c57d2cfd75fbff261d2c1ee22489085a443a5ee0e73a79d60ee6c
 
 name:           Jsonr
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      JSONConfig.JSONR
       JSONDat
       JSONPrinter.Compress
       JSONPrinter.Pretty
@@ -44,6 +45,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , containers
     , directory >=1
     , filepath
     , hspec >=2.7
@@ -62,6 +64,7 @@ executable Jsonr-trans
   build-depends:
       Jsonr
     , base >=4.7 && <5
+    , containers
     , directory >=1
     , filepath
     , hspec >=2.7
@@ -88,6 +91,7 @@ test-suite Jsonr-test
   build-depends:
       Jsonr
     , base >=4.7 && <5
+    , containers
     , directory >=1
     , filepath
     , hspec >=2.7

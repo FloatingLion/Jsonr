@@ -27,6 +27,7 @@ dependencies:
 - hspec >= 2.7
 - lens
 - optparse-applicative
+- containers
 
 library:
   source-dirs: src
